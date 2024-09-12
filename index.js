@@ -1,4 +1,3 @@
-
 const express = require('express');
 const puppeteer = require('puppeteer');
 
@@ -11,8 +10,11 @@ app.use(express.json());
 // مسار API لاستقبال الطلبات من العميل
 app.post('/connect', async (req, res) => {
     try {
-        // تشغيل المتصفح باستخدام Puppeteer
-        const browser = await puppeteer.launch();
+        // تشغيل المتصفح باستخدام Puppeteer مع تعطيل الـ sandbox
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'] // هذه الخيارات ضرورية لتجنب مشاكل التشغيل في بيئات مثل Replit
+        });
         const page = await browser.newPage();
 
         // البيانات التي تم استقبالها من العميل
