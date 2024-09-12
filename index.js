@@ -1,25 +1,53 @@
+
 const express = require('express');
+const puppeteer = require('puppeteer');
+
 const app = express();
-const port = 3000;
-app.get('/callback', async (req, res) => {
-    const code = req.query.code;
-    const state = req.query.state;
-    console.log(state,code);
-    if (!code || !state) {
-        return res.status(400).send('Error: Missing code or state parameter');
-    }
+const PORT = 3000;
 
+// إعداد Express لقبول JSON في الطلبات
+app.use(express.json());
+
+// مسار API لاستقبال الطلبات من العميل
+app.post('/connect', async (req, res) => {
     try {
-        res.redirect(`${state}?code=${code}`);
+        // تشغيل المتصفح باستخدام Puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+
+        // البيانات التي تم استقبالها من العميل
+        const clientData = req.body;
+
+        // الذهاب إلى الصفحة التي تحتوي على الـ API (استبدل بالرابط الفعلي الخاص بـ InfinityFree)
+        await page.goto('http://egypt-radius.rf.gd/', { waitUntil: 'networkidle2' });
+
+        // إرسال طلب POST باستخدام نموذج HTML
+        const response = await page.evaluate(async (data) => {
+            const response = await fetch('http://egypt-radius.rf.gd/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }, clientData);
+
+        // إغلاق المتصفح
+        await browser.close();
+
+        // إعادة النتيجة للعميل
+        res.json({
+            message: 'Request successfully processed!',
+            infinityFreeResponse: response
+        });
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error processing the authentication request');
+        console.error('Error occurred:', error.message);
+        res.status(500).json({ error: 'Something went wrong' });
     }
 });
 
-app.get('/ping', async (req, res) => {
-    res.status(200).send('Pong');
-});
-app.listen(port, () => {
-    console.log(`Server is running on`);
+// تشغيل الخادم
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
